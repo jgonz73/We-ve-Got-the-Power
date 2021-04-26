@@ -46,7 +46,7 @@ initialView <- subset(df, COMMUNITY == "Near West Side")
 focusView <- subset(blocks_simple, BLOCKS %in% initialView$BLOCK)
 coord <- subset(focusView, select = c("INTPTLAT10", "INTPTLON10"))
 
-test <- merge(focusView, initialView, by="BLOCK")
+#test <- merge(focusView, initialView, by="BLOCK")
 #=====================================================================================================================================
 # Get total kwh by month and by census block
 
@@ -89,6 +89,42 @@ reshapedTotal <- reshape(totalByMonth,
                          direction = "long"
                          )
 #reshapedTotal.sort <- reshapedTotal[order(reshapedTotal$COMMUNITY),]
+
+totalByMonth2 <- df %>%
+  select(
+    COMMUNITY,
+    BLOCK,
+    THERM_JAN,
+    THERM_FEB,
+    THERM_MAR,
+    THERM_APR,
+    THERM_MAY,
+    THERM_JUN,
+    THERM_JUL,
+    THERM_AUG,
+    THERM_SEP,
+    THERM_OCT,
+    THERM_NOV,
+    THERM_DEC,
+  )
+colnames(totalByMonth2) <- months
+
+totalByMonth2 <- subset(totalByMonth2, !is.na(totalByMonth2$JAN))
+totalByMonth2$COMMUNITY <- as.factor(totalByMonth2$COMMUNITY)
+
+reshapedTotal2 <- reshape(totalByMonth2,
+                         varying = c("JAN", "FEB", "MAR", "APR", 
+                                     "MAY", "JUN", "JUL", "AUG", 
+                                     "SEP", "OCT", "NOV", "DEC"
+                         ),
+                         v.names = "KWH",
+                         timevar = "MONTH",
+                         times = c("JAN", "FEB", "MAR", "APR", 
+                                   "MAY", "JUN", "JUL", "AUG", 
+                                   "SEP", "OCT", "NOV", "DEC"),
+                         new.row.names = sequence(prod(12, nrow(totalByMonth))),
+                         direction = "long"
+)
 
 #=====================================================================================================================================
 datas <- c("Gas", "Electricity", "Building Age", "Building Type", "Building Height", "Total Population")
@@ -179,23 +215,22 @@ server <- function(input, output) {
   
   # Total Electricity Line Graph
   output$line1 <- renderPlot({
-    ggplot(reshapedTotal, aes(x=MONTH, y=KWH, group=COMMUNITY)) + 
-      geom_line(aes(color=COMMUNITY)) + labs(x="Month", y="Energy (KWH)")
+    ggplot(reshapedTotal, aes(x=MONTH, y=KWH, fill=BLOCKS)) + 
+      geom_bar(position="stack", stat="identity") + labs(x="Month", y="Energy (KWH)")   
   })
   
   # Total Gas Line Graph
   output$line2 <- renderPlot({
-    #ggplot(, aes(group=, color=, 
-    #                    y=, x=) + 
-    #  stat_summary(fun="sum", geom="line") + labs(x="Month", y="Total KWH")
+    ggplot(reshapedTotal2, aes(x=MONTH, y=KWH, fill=BLOCKS)) + 
+      geom_bar(position="stack", stat="identity") + labs(x="Month", y="Energy (KWH)")   
   })
   
   output$tab1 <- DT::renderDataTable({
-    #DT::datatable(data=, options = list(pageLength=5))
+    DT::datatable(data=reshapedTotal, options = list(pageLength=5))
   })
   
   output$tab2 <- DT::renderDataTable({
-    #DT::datatable(data=, options = list(pageLength=5))
+    DT::datatable(data=reshapedTotal2, options = list(pageLength=5))
   })
 }
 
