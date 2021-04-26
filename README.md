@@ -24,6 +24,8 @@ Link to my visualization solution on Shinyapps:
  dir = directory path to the folder the files are in
  
  4.) install.packages('package') on all libraries listed in the top of the .R file
+
+ 5.) Install the .csv file from Kaggle and put it in the same directory as the project. https://www.kaggle.com/chicago/chicago-energy-usage-2010
  
  Once there, you should be able to run the application by using the command runApp() in the console 
  or the "Run App" button on the top right of RStudio.
