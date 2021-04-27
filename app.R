@@ -53,7 +53,15 @@ cntr_crds <- c(mean(coord$INTPTLAT10),
                -mean(coord$INTPTLON10))
 
 test <- merge(focusView, initialView, by.x="BLOCKS", by.y="BLOCK")
-test <- subset(test, select = c("COMMUNITY", "TRACTCE10", "BLOCKCE10", "BLOCKS", "INTPTLAT10", "INTPTLON10", "TOTAL_KWH", "TOTAL_THERM", "AVERAGE.HOUSESIZE", "BUILD_TYPE", "TOTAL.POPULATION", "AVERAGE.BUILDING.AGE"))
+test <- subset(test, select = c("COMMUNITY", "TRACTCE10", "BLOCKCE10", "BLOCKS", 
+                                "INTPTLAT10", "INTPTLON10", "TOTAL_KWH", "TOTAL_THERM", 
+                                "AVERAGE.HOUSESIZE", "BUILD_TYPE", "TOTAL.POPULATION", 
+                                "AVERAGE.BUILDING.AGE", "KWH_JAN", "KWH_FEB", "KWH_MAR", 
+                                "KWH_APR", "KWH_MAY", "KWH_JUN", "KWH_JUL", "KWH_AUG", 
+                                "KWH_SEP", "KWH_OCT", "KWH_NOV", "KWH_DEC", 
+                                "THERM_JAN", "THERM_FEB", "THERM_MAR", 
+                                "THERM_APR", "THERM_MAY", "THERM_JUN", "THERM_JUL", 
+                                "THERM_AUG", "THERM_SEP", "THERM_OCT", "THERM_NOV", "THERM_DEC"))
 
 #=====================================================================================================================================
 # Get total kwh by month and by census block
@@ -238,117 +246,80 @@ server <- function(input, output) {
   
   # centered and scaled mapview of the Near West Side Community Area
   # Get total electric usage over the entire year 
-  
-  output$test <- renderLeaflet({
-    #mapview(chicago_blocks)@map
-    
-    #coord$INTPTLAT10 <- as.numeric(gsub("+", "", coord$INTPTLAT10))
-    #coord$INTPTLON10 <- as.numeric(gsub("-", "", coord$INTPTLON10))
-    #cntr_crds <- c(mean(coord$INTPTLAT10),
-    #               -mean(coord$INTPTLON10))
-    #mapview(focusView)@map %>% setView(cntr_crds[2], cntr_crds[1], zoom=13)
-    
-    if (input$build_types == "All") {
-      newdf <- test
-    } else {
-      newdf <- subset(test, test$BUILD_TYPE == input$build_types)
-    }
-    
-    mapview(test, zcol="TOTAL_KWH")@map %>% setView(cntr_crds[2], cntr_crds[1], zoom=13)
-  })
-  
-  observeEvent(input$build_types, {
-    if (input$build_types == "All") {
-      newdf <- test
-    } else {
-      newdf <- subset(test, test$BUILD_TYPE == input$build_types)
-    }
-    
-    if (input$selectData == "Gas") {
-      newdf <- subset(newdf, !is.na(newdf$TOTAL_THERM))
-      mapview(newdf, zcol="TOTAL_THERM")@map %>% setView(cntr_crds[2], cntr_crds[1], zoom=13)
-    } else if (input$selectData == "Electricity") {
-      newdf <- subset(newdf, !is.na(newdf$TOTAL_KWH))
-      mapview(newdf, zcol="TOTAL_KWH")@map %>% setView(cntr_crds[2], cntr_crds[1], zoom=13)
-    } else if (input$selectData == "Building Age") {
-      newdf <- subset(newdf, !is.na(newdf$AVERAGE.BUILDING.AGE))
-      mapview(newdf, zcol="AVERAGE.BUILDING.AGE")@map %>% setView(cntr_crds[2], cntr_crds[1], zoom=13)
-    } else if (input$selectData == "Building Height") {
-      newdf <- subset(newdf, !is.na(newdf$AVERAGE.HOUSESIZE))
-      mapview(newdf, zcol="AVERAGE.HOUSESIZE")@map %>% setView(cntr_crds[2], cntr_crds[1], zoom=13)
-    } else if (input$selectData == "Building Type") {
-      newdf <- subset(newdf, !is.na(newdf$BUILD_TYPE))
-      mapview(newdf, zcol="BUILD_TYPE")@map %>% setView(cntr_crds[2], cntr_crds[1], zoom=13)
-    } else { # Total Population
-      newdf <- subset(newdf, !is.na(newdf$TOTAL.POPULATION))
-      mapview(newdf, zcol="TOTAL.POPULATION")@map %>% setView(cntr_crds[2], cntr_crds[1], zoom=13)
-    }
-  })
-
-  observeEvent(input$selectData, {
-
-    if (input$build_types == "All") {
-      newdf <- test
-    } else {
-      newdf <- subset(test, test$BUILD_TYPE == input$build_types)
-    }
-    
-    
-    if (input$selectData == "Gas") {
-      newdf <- subset(newdf, !is.na(newdf$TOTAL_THERM))
-      mapview(newdf, zcol="TOTAL_THERM")@map %>% setView(cntr_crds[2], cntr_crds[1], zoom=13)
-    } else if (input$selectData == "Electricity") {
-      newdf <- subset(newdf, !is.na(newdf$TOTAL_KWH))
-      mapview(newdf, zcol="TOTAL_KWH")@map %>% setView(cntr_crds[2], cntr_crds[1], zoom=13)
-    } else if (input$selectData == "Building Age") {
-      newdf <- subset(newdf, !is.na(newdf$AVERAGE.BUILDING.AGE))
-      mapview(newdf, zcol="AVERAGE.BUILDING.AGE")@map %>% setView(cntr_crds[2], cntr_crds[1], zoom=13)
-    } else if (input$selectData == "Building Height") {
-      newdf <- subset(newdf, !is.na(newdf$AVERAGE.HOUSESIZE))
-      mapview(newdf, zcol="AVERAGE.HOUSESIZE")@map %>% setView(cntr_crds[2], cntr_crds[1], zoom=13)
-    } else if (input$selectData == "Building Type") {
-      newdf <- subset(newdf, !is.na(newdf$BUILD_TYPE))
-      mapview(newdf, zcol="BUILD_TYPE")@map %>% setView(cntr_crds[2], cntr_crds[1], zoom=13)
-    } else { # Total Population
-      newdf <- subset(newdf, !is.na(newdf$TOTAL.POPULATION))
-      mapview(newdf, zcol="TOTAL.POPULATION")@map %>% setView(cntr_crds[2], cntr_crds[1], zoom=13)
-    }
-  })  
-  
-  observeEvent(input$month, {
-    
-    if (input$build_types == "All") {
-      newdf <- test
-    } else {
-      newdf <- subset(test, test$BUILD_TYPE %in% input$build_types)
-    }
-    
-    if (input$selectData == "Gas") {
-#      result = switch(
-#        input$month,
-#        
-#        "Year" = newdf, 
-#        "Jan", 
-#        "Feb", 
-#        "Mar", 
-#        "Apr", 
-#        "May", 
-#        "Jun", 
-#        "Jul", 
-#        "Aug", 
-#        "Sep", 
-#        "Oct", 
-#        "Nov", 
-#        "Dec"
-#      )
+  observe({
+    output$test <- renderLeaflet({
+      #mapview(chicago_blocks)@map
       
-      mapview(newdf, zcol="TOTAL_THERM")@map %>% setView(cntr_crds[2], cntr_crds[1], zoom=13)
-    } else if (input$selectData == "Electricity") {
-      mapview(newdf, zcol="TOTAL_KWH")@map %>% setView(cntr_crds[2], cntr_crds[1], zoom=13)
-    }
-    
-    
+      #coord$INTPTLAT10 <- as.numeric(gsub("+", "", coord$INTPTLAT10))
+      #coord$INTPTLON10 <- as.numeric(gsub("-", "", coord$INTPTLON10))
+      #cntr_crds <- c(mean(coord$INTPTLAT10),
+      #               -mean(coord$INTPTLON10))
+      #mapview(focusView)@map %>% setView(cntr_crds[2], cntr_crds[1], zoom=13)
+      
+      if (input$build_types == "All") {
+        newdf <- test
+      } else {
+        newdf <- subset(test, test$BUILD_TYPE == input$build_types)
+      }
+      
+      if (input$selectData == "Electricity") {
+        newdf <- subset(newdf, !is.na(newdf$TOTAL_KWH))
+        switch(
+          input$month,
+          
+          "Year" = mapview(newdf, zcol="TOTAL_KWH")@map %>% setView(cntr_crds[2], cntr_crds[1], zoom=13), 
+          "Jan" = mapview(newdf, zcol="KWH_JAN")@map %>% setView(cntr_crds[2], cntr_crds[1], zoom=13), 
+          "Feb" = mapview(newdf, zcol="KWH_FEB")@map %>% setView(cntr_crds[2], cntr_crds[1], zoom=13), 
+          "Mar" = mapview(newdf, zcol="KWH_MAR")@map %>% setView(cntr_crds[2], cntr_crds[1], zoom=13), 
+          "Apr" = mapview(newdf, zcol="KWH_APR")@map %>% setView(cntr_crds[2], cntr_crds[1], zoom=13), 
+          "May" = mapview(newdf, zcol="KWH_MAY")@map %>% setView(cntr_crds[2], cntr_crds[1], zoom=13), 
+          "Jun" = mapview(newdf, zcol="KWH_JUN")@map %>% setView(cntr_crds[2], cntr_crds[1], zoom=13), 
+          "Jul" = mapview(newdf, zcol="KWH_JUL")@map %>% setView(cntr_crds[2], cntr_crds[1], zoom=13), 
+          "Aug" = mapview(newdf, zcol="KWH_AUG")@map %>% setView(cntr_crds[2], cntr_crds[1], zoom=13), 
+          "Sep" = mapview(newdf, zcol="KWH_SEP")@map %>% setView(cntr_crds[2], cntr_crds[1], zoom=13), 
+          "Oct" = mapview(newdf, zcol="KWH_OCT")@map %>% setView(cntr_crds[2], cntr_crds[1], zoom=13), 
+          "Nov" = mapview(newdf, zcol="KWH_NOV")@map %>% setView(cntr_crds[2], cntr_crds[1], zoom=13), 
+          "Dec" = mapview(newdf, zcol="KWH_DEC")@map %>% setView(cntr_crds[2], cntr_crds[1], zoom=13)
+        )
+      } else if (input$selectData == "Gas") {
+        newdf <- subset(newdf, !is.na(newdf$TOTAL_THERM))
+        switch(
+          input$month,
+          
+          "Year" = mapview(newdf, zcol="TOTAL_THERM")@map %>% setView(cntr_crds[2], cntr_crds[1], zoom=13), 
+          "Jan" = mapview(newdf, zcol="THERM_JAN")@map %>% setView(cntr_crds[2], cntr_crds[1], zoom=13), 
+          "Feb" = mapview(newdf, zcol="THERM_FEB")@map %>% setView(cntr_crds[2], cntr_crds[1], zoom=13), 
+          "Mar" = mapview(newdf, zcol="THERM_MAR")@map %>% setView(cntr_crds[2], cntr_crds[1], zoom=13), 
+          "Apr" = mapview(newdf, zcol="THERM_APR")@map %>% setView(cntr_crds[2], cntr_crds[1], zoom=13), 
+          "May" = mapview(newdf, zcol="THERM_MAY")@map %>% setView(cntr_crds[2], cntr_crds[1], zoom=13), 
+          "Jun" = mapview(newdf, zcol="THERM_JUN")@map %>% setView(cntr_crds[2], cntr_crds[1], zoom=13), 
+          "Jul" = mapview(newdf, zcol="THERM_JUL")@map %>% setView(cntr_crds[2], cntr_crds[1], zoom=13), 
+          "Aug" = mapview(newdf, zcol="THERM_AUG")@map %>% setView(cntr_crds[2], cntr_crds[1], zoom=13), 
+          "Sep" = mapview(newdf, zcol="THERM_SEP")@map %>% setView(cntr_crds[2], cntr_crds[1], zoom=13), 
+          "Oct" = mapview(newdf, zcol="THERM_OCT")@map %>% setView(cntr_crds[2], cntr_crds[1], zoom=13), 
+          "Nov" = mapview(newdf, zcol="THERM_NOV")@map %>% setView(cntr_crds[2], cntr_crds[1], zoom=13), 
+          "Dec" = mapview(newdf, zcol="THERM_DEC")@map %>% setView(cntr_crds[2], cntr_crds[1], zoom=13)
+        )  
+      } else if (input$selectData == "Building Age") {
+        newdf <- subset(newdf, !is.na(newdf$AVERAGE.BUILDING.AGE))
+        mapview(newdf, zcol="AVERAGE.BUILDING.AGE")@map %>% setView(cntr_crds[2], cntr_crds[1], zoom=13)
+      } else if (input$selectData == "Building Height") {
+        newdf <- subset(newdf, !is.na(newdf$AVERAGE.HOUSESIZE))
+        mapview(newdf, zcol="AVERAGE.HOUSESIZE")@map %>% setView(cntr_crds[2], cntr_crds[1], zoom=13)
+      } else if (input$selectData == "Building Type") {
+        newdf <- subset(newdf, !is.na(newdf$BUILD_TYPE))
+        mapview(newdf, zcol="BUILD_TYPE")@map %>% setView(cntr_crds[2], cntr_crds[1], zoom=13)
+      } else { # Total Population
+        newdf <- subset(newdf, !is.na(newdf$TOTAL.POPULATION))
+        mapview(newdf, zcol="TOTAL.POPULATION")@map %>% setView(cntr_crds[2], cntr_crds[1], zoom=13)
+      }
+      
+     # mapview(test, zcol="TOTAL_KWH")@map %>% setView(cntr_crds[2], cntr_crds[1], zoom=13)
+    })
   })
+  
+  
+  
   
   # Reset map with reset button
   eventReactive(input$reset, {
