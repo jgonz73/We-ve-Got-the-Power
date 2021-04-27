@@ -46,7 +46,15 @@ initialView <- subset(df, COMMUNITY == "Near West Side")
 focusView <- subset(blocks_simple, BLOCKS %in% initialView$BLOCK)
 coord <- subset(focusView, select = c("INTPTLAT10", "INTPTLON10"))
 
-#test <- merge(focusView, initialView, by="BLOCK")
+# Initialize coordinates for startup mapview
+coord$INTPTLAT10 <- as.numeric(gsub("+", "", coord$INTPTLAT10))
+coord$INTPTLON10 <- as.numeric(gsub("-", "", coord$INTPTLON10))
+cntr_crds <- c(mean(coord$INTPTLAT10),
+               -mean(coord$INTPTLON10))
+
+test <- merge(focusView, initialView, by.x="BLOCKS", by.y="BLOCK")
+test <- subset(test, select = c("COMMUNITY", "TRACTCE10", "BLOCKCE10", "BLOCKS", "INTPTLAT10", "INTPTLON10", "TOTAL_KWH", "TOTAL_THERM", "AVERAGE.HOUSESIZE", "BUILD_TYPE", "TOTAL.POPULATION", "AVERAGE.BUILDING.AGE"))
+
 #=====================================================================================================================================
 # Get total kwh by month and by census block
 
@@ -127,7 +135,7 @@ reshapedTotal2 <- reshape(totalByMonth2,
 )
 
 #=====================================================================================================================================
-datas <- c("Gas", "Electricity", "Building Age", "Building Type", "Building Height", "Total Population")
+datas <- c("Electricity", "Gas", "Building Age", "Building Type", "Building Height", "Total Population")
 time <- c("Year", "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec")
 build_types <- c("Residential", "Commercial", "Industrial", "All")
 community <- unique(df$COMMUNITY)
@@ -146,7 +154,7 @@ ui <- navbarPage("CS424 Spring 2021 Project 3",
                                 fluidRow(
                                   box(status="primary", width=20, solidHeader=TRUE,
                                       selectInput("build_types", "Select building type(s):", build_types, selected = "All"),
-                                      selectInput("selectData", "Select Data by:", datas, selected = "Gas")
+                                      selectInput("selectData", "Select Data by:", datas, selected = "Electricity")
                                   )
                                 ),
                                 fluidRow( 
@@ -178,38 +186,180 @@ ui <- navbarPage("CS424 Spring 2021 Project 3",
                          ),
                         
                        )
-                 )
+                 ),
+                 
                  #tabPanel("Compare two Community Areas")
+                 tabPanel("About",
+                          h1("Project 3: We've Got the Power"),
+                          h3("Developed By: Joshua Gonzales"),
+                          h4("Project 3 in CS 424 (Data Analytics / Visualization) at the University of Illinois at Chicago Spring 2021"),
+                          
+                          h5("________________________________________________________________________________________________________________________________________________________________________________________________________________________________________________________________________________________________________________________________________________"),
+                          
+                          h3(""),
+                          h4("This project contains data on the energy usage combined with some census data from 2010 in Chicago"),
+                          h3(""),
+                          h4("The data focuses on the census blocks of Chicago: "),
+                          h4("Gas, Electricity, Building data, Population in that block"),
+                          strong("The application helps visualize energy usage data by using leaflets and mapview, with part 1 being just the Near West Side Community Area, part 2 being comparisons between two areas, and part 3 involving displaying the whole of Chicago"),
+                          h3(""),
+                          
+                          h5("* Libraries Used: shiny, tidyverse, sf, leaflet, ggplot2, geojsonio, mapview, reshape"),
+                          
+                          h5("* City of Chicago Energy Usage 2010: https://www.kaggle.com/chicago/chicago-energy-usage-2010"),
+                          h5("Files used: energy-usage-2010.csv"),
+                          
+                          h5("* Created using R, RStudio, Shiny ")
+                 )
 )
 
 # Define server logic required to draw a histogram
 server <- function(input, output) {
-  # Reactive df based on particular month/total for entire year to see electricy or gas usage
+  
+  # Reactive df based on particular month/total for entire year to see electricity or gas usage
+  #byMonth <- reactive({
+  #  monthdf <- NULL
+  #  
+  #  # Get month if electricity
+  #  if (input$selectData == "Electricity") {
+  #    monthdf <- subset(reshapedTotal, MONTH %in% input$month)
+  #  }
+  #   
+  #  
+  #  # Get month if gas
+  #  if (input$selectData == "Gas") {
+  #    monthdf <- subset(reshapedTotal2, MONTH %in% input$month) 
+  #  }
+  #  
+  #  return (monthdf)
+  #})
   
   # Reactive df based on total electricity/gas used in current census blocks 
   
   # centered and scaled mapview of the Near West Side Community Area
+  # Get total electric usage over the entire year 
+  
   output$test <- renderLeaflet({
     #mapview(chicago_blocks)@map
     
-    coord$INTPTLAT10 <- as.numeric(gsub("+", "", coord$INTPTLAT10))
-    coord$INTPTLON10 <- as.numeric(gsub("-", "", coord$INTPTLON10))
-    cntr_crds <- c(mean(coord$INTPTLAT10),
-                   -mean(coord$INTPTLON10))
-    mapview(focusView)@map %>% setView(cntr_crds[2], cntr_crds[1], zoom=13)
+    #coord$INTPTLAT10 <- as.numeric(gsub("+", "", coord$INTPTLAT10))
+    #coord$INTPTLON10 <- as.numeric(gsub("-", "", coord$INTPTLON10))
+    #cntr_crds <- c(mean(coord$INTPTLAT10),
+    #               -mean(coord$INTPTLON10))
+    #mapview(focusView)@map %>% setView(cntr_crds[2], cntr_crds[1], zoom=13)
+    
+    if (input$build_types == "All") {
+      newdf <- test
+    } else {
+      newdf <- subset(test, test$BUILD_TYPE == input$build_types)
+    }
+    
+    mapview(test, zcol="TOTAL_KWH")@map %>% setView(cntr_crds[2], cntr_crds[1], zoom=13)
   })
   
-  # Get total electric usage over the entire year 
   observeEvent(input$build_types, {
+    if (input$build_types == "All") {
+      newdf <- test
+    } else {
+      newdf <- subset(test, test$BUILD_TYPE == input$build_types)
+    }
+    
+    if (input$selectData == "Gas") {
+      newdf <- subset(newdf, !is.na(newdf$TOTAL_THERM))
+      mapview(newdf, zcol="TOTAL_THERM")@map %>% setView(cntr_crds[2], cntr_crds[1], zoom=13)
+    } else if (input$selectData == "Electricity") {
+      newdf <- subset(newdf, !is.na(newdf$TOTAL_KWH))
+      mapview(newdf, zcol="TOTAL_KWH")@map %>% setView(cntr_crds[2], cntr_crds[1], zoom=13)
+    } else if (input$selectData == "Building Age") {
+      newdf <- subset(newdf, !is.na(newdf$AVERAGE.BUILDING.AGE))
+      mapview(newdf, zcol="AVERAGE.BUILDING.AGE")@map %>% setView(cntr_crds[2], cntr_crds[1], zoom=13)
+    } else if (input$selectData == "Building Height") {
+      newdf <- subset(newdf, !is.na(newdf$AVERAGE.HOUSESIZE))
+      mapview(newdf, zcol="AVERAGE.HOUSESIZE")@map %>% setView(cntr_crds[2], cntr_crds[1], zoom=13)
+    } else if (input$selectData == "Building Type") {
+      newdf <- subset(newdf, !is.na(newdf$BUILD_TYPE))
+      mapview(newdf, zcol="BUILD_TYPE")@map %>% setView(cntr_crds[2], cntr_crds[1], zoom=13)
+    } else { # Total Population
+      newdf <- subset(newdf, !is.na(newdf$TOTAL.POPULATION))
+      mapview(newdf, zcol="TOTAL.POPULATION")@map %>% setView(cntr_crds[2], cntr_crds[1], zoom=13)
+    }
+  })
+
+  observeEvent(input$selectData, {
+
+    if (input$build_types == "All") {
+      newdf <- test
+    } else {
+      newdf <- subset(test, test$BUILD_TYPE == input$build_types)
+    }
+    
+    
+    if (input$selectData == "Gas") {
+      newdf <- subset(newdf, !is.na(newdf$TOTAL_THERM))
+      mapview(newdf, zcol="TOTAL_THERM")@map %>% setView(cntr_crds[2], cntr_crds[1], zoom=13)
+    } else if (input$selectData == "Electricity") {
+      newdf <- subset(newdf, !is.na(newdf$TOTAL_KWH))
+      mapview(newdf, zcol="TOTAL_KWH")@map %>% setView(cntr_crds[2], cntr_crds[1], zoom=13)
+    } else if (input$selectData == "Building Age") {
+      newdf <- subset(newdf, !is.na(newdf$AVERAGE.BUILDING.AGE))
+      mapview(newdf, zcol="AVERAGE.BUILDING.AGE")@map %>% setView(cntr_crds[2], cntr_crds[1], zoom=13)
+    } else if (input$selectData == "Building Height") {
+      newdf <- subset(newdf, !is.na(newdf$AVERAGE.HOUSESIZE))
+      mapview(newdf, zcol="AVERAGE.HOUSESIZE")@map %>% setView(cntr_crds[2], cntr_crds[1], zoom=13)
+    } else if (input$selectData == "Building Type") {
+      newdf <- subset(newdf, !is.na(newdf$BUILD_TYPE))
+      mapview(newdf, zcol="BUILD_TYPE")@map %>% setView(cntr_crds[2], cntr_crds[1], zoom=13)
+    } else { # Total Population
+      newdf <- subset(newdf, !is.na(newdf$TOTAL.POPULATION))
+      mapview(newdf, zcol="TOTAL.POPULATION")@map %>% setView(cntr_crds[2], cntr_crds[1], zoom=13)
+    }
+  })  
+  
+  observeEvent(input$month, {
+    
+    if (input$build_types == "All") {
+      newdf <- test
+    } else {
+      newdf <- subset(test, test$BUILD_TYPE %in% input$build_types)
+    }
+    
+    if (input$selectData == "Gas") {
+#      result = switch(
+#        input$month,
+#        
+#        "Year" = newdf, 
+#        "Jan", 
+#        "Feb", 
+#        "Mar", 
+#        "Apr", 
+#        "May", 
+#        "Jun", 
+#        "Jul", 
+#        "Aug", 
+#        "Sep", 
+#        "Oct", 
+#        "Nov", 
+#        "Dec"
+#      )
+      
+      mapview(newdf, zcol="TOTAL_THERM")@map %>% setView(cntr_crds[2], cntr_crds[1], zoom=13)
+    } else if (input$selectData == "Electricity") {
+      mapview(newdf, zcol="TOTAL_KWH")@map %>% setView(cntr_crds[2], cntr_crds[1], zoom=13)
+    }
+    
     
   })
   
-  
   # Reset map with reset button
   eventReactive(input$reset, {
-      proxy <- leafletProxy("test", data=chicago_blocks)
-      
-      proxy %>% clearControls() 
+      #proxy <- leafletProxy("test", data=chicago_blocks)
+      coord$INTPTLAT10 <- as.numeric(gsub("+", "", coord$INTPTLAT10))
+      coord$INTPTLON10 <- as.numeric(gsub("-", "", coord$INTPTLON10))
+      cntr_crds <- c(mean(coord$INTPTLAT10),
+                     -mean(coord$INTPTLON10))
+      #mapview(focusView)@map %>% setView(cntr_crds[2], cntr_crds[1], zoom=13)
+      mapview(test, zcol="TOTAL_KWH")@map %>% setView(cntr_crds[2], cntr_crds[1], zoom=13)
+      #proxy %>% clearControls() 
       #%>% mapview(chicago_blocks)@map
   })
   
@@ -226,11 +376,11 @@ server <- function(input, output) {
   })
   
   output$tab1 <- DT::renderDataTable({
-    DT::datatable(data=reshapedTotal, options = list(pageLength=5))
+    DT::datatable(data=totalByMonth, options = list(pageLength=5))
   })
   
   output$tab2 <- DT::renderDataTable({
-    DT::datatable(data=reshapedTotal2, options = list(pageLength=5))
+    DT::datatable(data=totalByMonth2, options = list(pageLength=5))
   })
 }
 
